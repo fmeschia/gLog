@@ -42,7 +42,7 @@ float g;
 long time, startTime, lastTime;
 long launchTime, zoomTime, landTime;
 long interval PROGMEM = 50L;
-long ZOOM_RELAX_TIME PROGMEM = 250L;
+long ZOOM_RELAX_TIME PROGMEM = 3000L;
 long RELAX_TIME PROGMEM = 5000L;
 float st, ct, sp, cp;
 float axr, ayr, azr;
@@ -400,7 +400,7 @@ void loop() {
   int16_t ix, iy, iz;
   int16_t avg_x, avg_y, avg_z;
   int16_t sigma_x, sigma_y, sigma_z;
-  int8_t i, ptr, ptrExtr_y;
+  int8_t i, ptr, ptrExtr_x;
   int16_t tot, peak = 0;
   float avg_g;
   if (lastTime == -1L) {
@@ -425,6 +425,7 @@ void loop() {
     
     g = sqrt((axr/G_SCALE)*(axr/G_SCALE)+(ayr/G_SCALE)*(ayr/G_SCALE)+(azr/G_SCALE)*(azr/G_SCALE));
     
+/*
     workingFile.print(((lastTime-startTime)/10*10)*0.001); 
     workingFile.print(F("\t"));
     workingFile.print(ax*1.0/G_SCALE); 
@@ -433,6 +434,7 @@ void loop() {
     workingFile.print(F("\t"));
     workingFile.print(az*1.0/G_SCALE); 
     workingFile.print(F("\t"));
+*/
 
     avg_g = sqrt((avg_x*4.0/G_SCALE)*(avg_x*4.0/G_SCALE)+(avg_y*4.0/G_SCALE)*(avg_y*4.0/G_SCALE)+(avg_z*4.0/G_SCALE)*(avg_z*4.0/G_SCALE));
     
@@ -470,7 +472,7 @@ void loop() {
 #endif
     
     if (state == STATE_PRELAUNCH) {
-      if (ayr/G_SCALE > 2.0) {      
+      if (axr/G_SCALE > 2.0) {      
         Serial.println(F("*** LAUNCH DETECTED ***"));
         workingFile.print(F("LAUNCH"));
         digitalWrite(statled1,HIGH);
@@ -520,12 +522,12 @@ void loop() {
             tot = abs(filt_x[ptr]-avg_x) + abs(filt_y[ptr]-avg_y) + abs(filt_z[ptr]-avg_z);
             workingFile.println(tot);            
             if (tot > peak) {
-              ptrExtr_y = i;
+              ptrExtr_x = i;
               peak = tot;
             }
             ptr--; if (ptr < 0) ptr=BUF_SIZE-1;
           }
-          workingFile.print(F("\t ptr_max_y=")); workingFile.print(ptrExtr_y);
+          workingFile.print(F("\t ptr_max_x=")); workingFile.print(ptrExtr_x);
         }
       }
     } 
