@@ -426,7 +426,7 @@ void loop() {
     g = sqrt((axr/G_SCALE)*(axr/G_SCALE)+(ayr/G_SCALE)*(ayr/G_SCALE)+(azr/G_SCALE)*(azr/G_SCALE));
     
 
-    workingFile.print(((lastTime-startTime)/10*10)*0.001,3); 
+    workingFile.print(((lastTime-startTime)/5*5)*0.001,3); 
     workingFile.print(F("\t"));
 /*
     workingFile.print(ax*1.0/G_SCALE); 
