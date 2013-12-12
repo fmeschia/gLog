@@ -41,7 +41,7 @@ bool calibrate = false;
 float g;
 long time, startTime, lastTime;
 long launchTime, zoomTime, landTime;
-long interval PROGMEM = 50L;
+long interval PROGMEM = 125L;
 long ZOOM_RELAX_TIME PROGMEM = 3000L;
 long RELAX_TIME PROGMEM = 5000L;
 float st, ct, sp, cp;
@@ -425,9 +425,10 @@ void loop() {
     
     g = sqrt((axr/G_SCALE)*(axr/G_SCALE)+(ayr/G_SCALE)*(ayr/G_SCALE)+(azr/G_SCALE)*(azr/G_SCALE));
     
-/*
-    workingFile.print(((lastTime-startTime)/10*10)*0.001); 
+
+    workingFile.print(((lastTime-startTime)/10*10)*0.001,3); 
     workingFile.print(F("\t"));
+/*
     workingFile.print(ax*1.0/G_SCALE); 
     workingFile.print(F("\t"));
     workingFile.print(ay*1.0/G_SCALE); 
