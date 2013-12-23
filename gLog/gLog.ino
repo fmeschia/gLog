@@ -6,7 +6,7 @@
     3-axis accelerometer. Features include:
     
     * on start-up, gLog samples the gravity vector and assumes it to be the Z axis in a cartesian
-      system with X aligned with the direction of motion. All logging will be performed in this
+      system with Y aligned with the direction of motion. All logging will be performed in this
       reference frame. In this way, gLog can be mounted on a vehicle with arbitrary positioning 
       in pitch and roll, only requiring X to point in the forward direction.
       
@@ -319,19 +319,28 @@ void setup() {
   Serial.print(iy*1.0/G_SCALE); 
   Serial.print("\t");
   Serial.println(iz*1.0/G_SCALE); 
-  double theta = atan2(-ix,iz);
-  double phi = atan2(iy,sqrt(square(ix)+square(iz)));
-  sp = sin(-phi); 
-  cp = cos(-phi);
-  st = sin(-theta); 
-  ct = cos(-theta);
+  double phi = atan2(-ix, iz);
+  double theta = atan2(iy,sqrt(square(ix)+square(iz)));
+  //sp = sin(-phi); 
+  //cp = cos(-phi);
+  //st = sin(-theta); 
+  //ct = cos(-theta);
+  sp = -ix / sqrt(square(ix)+square(iz));
+  cp = iz / sqrt(square(ix)+square(iz));
+  st = iy / sqrt(square(ix)+square(iy)+square(iz));
+  ct = sqrt(square(ix)+square(iz)) / sqrt(square(ix)+square(iy)+square(iz));
   workingFile.print(F("Roll  : ")); 
   workingFile.println(phi*RAD_TO_DEG);
   workingFile.print(F("Pitch  : ")); 
   workingFile.println(theta*RAD_TO_DEG);
   
+  Serial.print(F("Roll  : ")); 
+  Serial.println(phi*RAD_TO_DEG);
+  Serial.print(F("Pitch  : ")); 
+  Serial.println(theta*RAD_TO_DEG);
+  
   workingFile.sync();   
-  Serial.print(F("Free SRAM: ")); Serial.print(freeRam()); Serial.println(F(" bytes"));
+//  Serial.print(F("Free SRAM: ")); Serial.print(freeRam()); Serial.println(F(" bytes"));
   int i;
   for ( i=0; i<BUF_SIZE; i++) {
     buf_x[i] = 0;
@@ -400,7 +409,7 @@ void loop() {
   int16_t ix, iy, iz;
   int16_t avg_x, avg_y, avg_z;
   int16_t sigma_x, sigma_y, sigma_z;
-  int8_t i, ptr, ptrExtr_x;
+  int8_t i, ptr, ptrExtr_y;
   int16_t tot, peak = 0;
   float avg_g;
   if (lastTime == -1L) {
@@ -419,15 +428,26 @@ void loop() {
     ay = iy * alpha + (ay * (1.0 - alpha));
     az = iz * alpha + (az * (1.0 - alpha));
 
-    axr = ax*ct - (-ay*sp + az*cp)*st;  
-    ayr = ay*cp + az*sp;  
-    azr = ax*st + (-ay*sp + az*cp)*ct;
+    //axr = ax*ct - (-ay*sp + az*cp)*st;  
+    //ayr = ay*cp + az*sp;  
+    //azr = ax*st + (-ay*sp + az*cp)*ct;
     
-    g = sqrt((axr/G_SCALE)*(axr/G_SCALE)+(ayr/G_SCALE)*(ayr/G_SCALE)+(azr/G_SCALE)*(azr/G_SCALE));
+    //axr = ax*cp + sp * (ay*st + az*ct);
+    //ayr = ay*ct - az*st;
+    //azr = -ax*sp + cp * (ay*st + az*ct);
     
+    axr =  ax*cp            + az*sp;
+    ayr =  ax*sp*st + ay*ct - az*cp*st;
+    azr = -ax*sp*ct + ay*st + az*cp*ct;
+
+    
+    g = sqrt((axr/G_SCALE)*(axr/G_SCALE)+(ayr/G_SCALE)*(ayr/G_SCALE)+(azr/G_SCALE)*(azr/G_SCALE));   
 
     workingFile.print(((lastTime-startTime)/5*5)*0.001,3); 
     workingFile.print(F("\t"));
+    
+    Serial.print(((lastTime-startTime)/5*5)*0.001,3); 
+    Serial.print(F("\t"));
 /*
     workingFile.print(ax*1.0/G_SCALE); 
     workingFile.print(F("\t"));
@@ -448,13 +468,21 @@ void loop() {
     filt_z[buf_ptr] = (int8_t)(alpha1*(filt_z[buf_ptr_old] + buf_z[buf_ptr] - buf_z[buf_ptr_old]));
     
     workingFile.print(axr/G_SCALE); 
-    workingFile.print(F("\t"));
+    workingFile.print(F("\t")); 
     workingFile.print(ayr/G_SCALE); 
     workingFile.print(F("\t"));
     workingFile.print(azr/G_SCALE); 
     workingFile.print(F("\t"));
     workingFile.print(g);
     workingFile.print(F("\t"));
+    
+    Serial.print(axr/G_SCALE); 
+    Serial.print(F("\t"));
+    Serial.print(ayr/G_SCALE); 
+    Serial.print(F("\t"));
+    Serial.print(azr/G_SCALE); 
+    Serial.print(F("\t"));
+    Serial.println(g);
 
     buf_ptr_old = buf_ptr;
     
@@ -473,7 +501,7 @@ void loop() {
 #endif
     
     if (state == STATE_PRELAUNCH) {
-      if (axr/G_SCALE > 2.0) {      
+      if (ayr/G_SCALE > 2.0) {      
         Serial.println(F("*** LAUNCH DETECTED ***"));
         workingFile.print(F("LAUNCH"));
         digitalWrite(statled1,HIGH);
@@ -498,7 +526,7 @@ void loop() {
      //     digitalWrite(statled1,HIGH);
      //     state = STATE_LANDED;
      //   } else
-       if (sigma_x < 5) {
+       if (sigma_y < 5) {
           Serial.println(F("*** LANDED DETECTED ***"));
           workingFile.print(F("LANDED"));
           digitalWrite(statled1,HIGH);
@@ -523,12 +551,12 @@ void loop() {
             tot = abs(filt_x[ptr]-avg_x) + abs(filt_y[ptr]-avg_y) + abs(filt_z[ptr]-avg_z);
             workingFile.println(tot);            
             if (tot > peak) {
-              ptrExtr_x = i;
+              ptrExtr_y = i;
               peak = tot;
             }
             ptr--; if (ptr < 0) ptr=BUF_SIZE-1;
           }
-          workingFile.print(F("\t ptr_max_x=")); workingFile.print(ptrExtr_x);
+          workingFile.print(F("\t ptr_max_y=")); workingFile.print(ptrExtr_y);
         }
       }
     } 
