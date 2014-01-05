@@ -44,6 +44,7 @@ long launchTime, zoomTime, landTime;
 long interval PROGMEM = 125L;
 long ZOOM_RELAX_TIME PROGMEM = 3000L;
 long RELAX_TIME PROGMEM = 5000L;
+long INITIAL_DELAY = 15000L;
 float st, ct, sp, cp;
 float axr, ayr, azr;
 const float alpha PROGMEM = 0.9;
@@ -233,6 +234,8 @@ void setup() {
   float ox, oy, oz;
   int8_t nox, noy, noz;
   
+  time = 0L;
+  
   pinMode(statled1, OUTPUT);
   pinMode(statled2, OUTPUT);
   
@@ -349,7 +352,9 @@ void setup() {
   }
 
   Serial.print(F("Free SRAM: ")); Serial.print(freeRam()); Serial.println(F(" bytes"));
-
+  while ((millis()-time) < INITIAL_DELAY) {
+    delay(100);
+  } 
   digitalWrite(statled1,LOW);
   lastTime = -1L;
 }
