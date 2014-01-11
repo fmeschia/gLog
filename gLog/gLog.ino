@@ -8,7 +8,7 @@
     * on start-up, gLog samples the gravity vector and assumes it to be the Z axis in a cartesian
       system with Y aligned with the direction of motion. All logging will be performed in this
       reference frame. In this way, gLog can be mounted on a vehicle with arbitrary positioning 
-      in pitch and roll, only requiring X to point in the forward direction.
+      in pitch and roll, only requiring Y to point in the forward direction.
       
     * gLog logs to a microSD card inserted in the microSD slot of the OpenLog hardware board.
     
@@ -44,7 +44,7 @@ long launchTime, zoomTime, landTime;
 long interval PROGMEM = 125L;
 long ZOOM_RELAX_TIME PROGMEM = 3000L;
 long RELAX_TIME PROGMEM = 5000L;
-long INITIAL_DELAY = 15000L;
+long INITIAL_DELAY = 15250L;
 float st, ct, sp, cp;
 float axr, ayr, azr;
 const float alpha PROGMEM = 0.9;
@@ -257,22 +257,9 @@ void setup() {
   power_timer2_disable();
   power_adc_disable();
    
-  if (card.init(SPI_FULL_SPEED)) {
-  if (!volume.init(&card)) systemError(ERROR_VOLUME_INIT);
-  currentDirectory.close(); //We close the cD before opening root. This comes from QuickStart example. Saves 4 bytes.
-  if (!currentDirectory.openRoot(&volume)) systemError(ERROR_ROOT_INIT);
-  newlog(logFileName);
-  Serial.println(logFileName);
-  if (!workingFile.open(&currentDirectory, logFileName, O_CREAT | O_APPEND | O_WRITE)) systemError(ERROR_FILE_OPEN);
-  if (workingFile.fileSize() == 0) {
-    //This is a trick to make sure first cluster is allocated - found in Bill's example/beta code
-    //workingFile.write((byte)0); //Leaves a NUL at the beginning of a file
-    workingFile.rewind();
-    workingFile.sync();
-  } 
-  } else {
+  if (!card.init(SPI_FULL_SPEED)) {
     Serial.println(F("No SD card - performing calibration"));
-   calibrate = true;
+    calibrate = true;
   } 
 
   // initialize ADXL345 device
@@ -317,6 +304,9 @@ void setup() {
   Serial.println(noz);
 
   average_acc(&ix, &iy, &iz, 20);
+  digitalWrite(statled1,LOW); 
+  delay(100);
+  digitalWrite(statled1,HIGH); 
   Serial.print(ix*1.0/G_SCALE); 
   Serial.print("\t");
   Serial.print(iy*1.0/G_SCALE); 
@@ -332,6 +322,21 @@ void setup() {
   cp = iz / sqrt(square(ix)+square(iz));
   st = iy / sqrt(square(ix)+square(iy)+square(iz));
   ct = sqrt(square(ix)+square(iz)) / sqrt(square(ix)+square(iy)+square(iz));
+  
+  delay(5000L);
+  if (!volume.init(&card)) systemError(ERROR_VOLUME_INIT);
+  currentDirectory.close(); //We close the cD before opening root. This comes from QuickStart example. Saves 4 bytes.
+  if (!currentDirectory.openRoot(&volume)) systemError(ERROR_ROOT_INIT);
+  newlog(logFileName);
+  Serial.println(logFileName);
+  if (!workingFile.open(&currentDirectory, logFileName, O_CREAT | O_APPEND | O_WRITE)) systemError(ERROR_FILE_OPEN);
+  if (workingFile.fileSize() == 0) {
+    //This is a trick to make sure first cluster is allocated - found in Bill's example/beta code
+    //workingFile.write((byte)0); //Leaves a NUL at the beginning of a file
+    workingFile.rewind();
+    workingFile.sync();
+  } 
+  
   workingFile.print(F("Roll  : ")); 
   workingFile.println(phi*RAD_TO_DEG);
   workingFile.print(F("Pitch  : ")); 
@@ -353,7 +358,7 @@ void setup() {
 
   Serial.print(F("Free SRAM: ")); Serial.print(freeRam()); Serial.println(F(" bytes"));
   while ((millis()-time) < INITIAL_DELAY) {
-    delay(100);
+    delay(50);
   } 
   digitalWrite(statled1,LOW);
   lastTime = -1L;
@@ -422,6 +427,7 @@ void loop() {
     workingFile.println(F("Timer reset"));
     lastTime = millis();
     startTime = lastTime/interval*interval;
+    lastTime -= 2*interval;
   }
   if ((time=millis())-lastTime >= interval) {
     digitalWrite(statled1, LOW);
