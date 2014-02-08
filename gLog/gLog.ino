@@ -392,10 +392,10 @@ void average_acc(float *ax, float *ay, float *az, int samples) {
 void moving_average(int16_t *ax, int16_t *ay, int16_t *az, int16_t *sigmax, int16_t *sigmay, int16_t *sigmaz, int8_t nsamples, int8_t start=0) {
   int8_t i, ptr;
   long sumx = 0L, sumy = 0L, sumz = 0L;
-  for (i=0, ptr=buf_ptr; i>nsamples; i++) {
-    ptr--; if (ptr < 0) ptr=BUF_SIZE-1;
-  }
-  for (i=0; i<nsamples; i++) {
+  //for (i=0, ptr=buf_ptr; i>nsamples; i++) {
+  //  ptr--; if (ptr < 0) ptr=BUF_SIZE-1;
+  //}
+  for (i=0, ptr=buf_ptr; i<nsamples; i++) {
       sumx += buf_x[ptr]; sumy += buf_y[ptr] ; sumz += buf_z[ptr];
       ptr--; if (ptr < 0) ptr=BUF_SIZE-1;
   }
@@ -425,6 +425,7 @@ void loop() {
   if (lastTime == -1L) {
     state = STATE_PRELAUNCH;
     workingFile.println(F("Timer reset"));
+    workingFile.println(F("Time\tax\tay\taz\ta\tavg_x\tavg_y\tavg_z\tsigma2_x\tsigma2_y\tsigma2_z\tfilter_x\tfilter_y\tfilter_z"));
     lastTime = millis();
     startTime = lastTime/interval*interval;
     lastTime -= 2*interval;
@@ -503,9 +504,9 @@ void loop() {
     workingFile.print(avg_x); workingFile.print(F("\t"));
     workingFile.print(avg_y); workingFile.print(F("\t"));
     workingFile.print(avg_z); workingFile.print(F("\t"));
-    //workingFile.print(sigma_x); workingFile.print(F("\t"));
-    //workingFile.print(sigma_y); workingFile.print(F("\t"));
-    //workingFile.print(sigma_z); workingFile.print(F("\t"));
+    workingFile.print(sigma_x); workingFile.print(F("\t"));
+    workingFile.print(sigma_y); workingFile.print(F("\t"));
+    workingFile.print(sigma_z); workingFile.print(F("\t"));
     workingFile.print(filt_x[buf_ptr]); workingFile.print(F("\t"));
     workingFile.print(filt_y[buf_ptr]); workingFile.print(F("\t"));
     workingFile.print(filt_z[buf_ptr]); workingFile.print(F("\t"));
